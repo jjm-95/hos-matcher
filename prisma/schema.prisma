@@ -1,0 +1,43 @@
+// schema.prisma
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id        String    @id @default(uuid()) // String 타입으로 설정
+  name      String
+  mmr       Float     @default(5)
+  matches   GameMatch[]   // 플레이어와 매칭된 경기들
+  gameResults GameResult[]  // 추가된 부분: 플레이어가 참여한 경기 기록들
+}
+
+model GameResult {
+  id        String    @id @default(uuid()) // id는 String으로 설정
+  playerId  String    // playerId는 String으로 설정
+  player    Player    @relation(fields: [playerId], references: [id])
+  result    String    // "win" or "loss"
+  createdAt DateTime  @default(now())
+}
+
+model GameMatch {
+  id        Int      @id @default(autoincrement())
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  String
+  result    String
+  team      String
+  isWinner  Boolean   // ✅ 새 필드
+  date      DateTime  @default(now())
+}
