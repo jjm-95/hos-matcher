@@ -27,14 +27,14 @@ model Player {
 model GameResult {
   id        String    @id @default(uuid()) // id는 String으로 설정
   playerId  String    // playerId는 String으로 설정
-  player    Player    @relation(fields: [playerId], references: [id])
+  player    Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
   result    String    // "win" or "loss"
   createdAt DateTime  @default(now())
 }
 
 model GameMatch {
   id        Int      @id @default(autoincrement())
-  player    Player   @relation(fields: [playerId], references: [id])
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   playerId  String
   result    String
   team      String
