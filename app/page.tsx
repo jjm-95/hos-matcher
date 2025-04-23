@@ -145,6 +145,21 @@ export default function HomePage() {
           </ul>
         </div>
 
+        {/* 설명글 */}
+        <div className="bg-gray-200 dark:bg-gray-700 p-4 rounded-lg mb-6">
+          <h3 className="text-lg font-semibold mb-2">📜 전투력 보정</h3>
+          <ul className="list-disc list-inside text-sm">
+            <li>2연승/연패 시 전투력에 ±0.5 보정이 적용</li>
+            <li>
+              전투력이 0 이하일 경우:
+              <ul className="list-disc list-inside ml-4">
+                <li>패배 시 전투력이 무조건 0.5 감소</li>
+                <li>승리 시 전투력이 무조건 +1 증가</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
         {/* Match 페이지로 이동 버튼 */}
         <div className="text-center">
           <button
