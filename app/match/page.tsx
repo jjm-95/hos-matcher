@@ -107,7 +107,7 @@ export default function MatchPage() {
                 className="flex justify-between items-center py-2"
               >
                 <span>
-                  {player.name} (MMR: {player.mmr})
+                  {player.name} (전투력💪: {player.mmr})
                 </span>
                 <button
                   onClick={() => handleAddToSelected(player)}
@@ -130,7 +130,7 @@ export default function MatchPage() {
                 className="flex justify-between items-center py-2"
               >
                 <span>
-                  {player.name} (MMR: {player.mmr})
+                  {player.name} (전투력💪: {player.mmr})
                 </span>
                 <button
                   onClick={() => handleRemoveFromSelected(player)}
@@ -152,12 +152,12 @@ export default function MatchPage() {
         {/* 팀 A */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4">
-            팀 A (총 전투력: {teamA.reduce((sum, p) => sum + p.mmr, 0)})
+            팀 높은봉우리 (총 전투력💪: {teamA.reduce((sum, p) => sum + p.mmr, 0)})
           </h2>
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {teamA.map((player) => (
               <li key={player.id} className="py-2">
-                {player.name} (MMR: {player.mmr})
+                {player.name} (전투력💪: {player.mmr})
               </li>
             ))}
           </ul>
@@ -166,12 +166,12 @@ export default function MatchPage() {
         {/* 팀 B */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4">
-            팀 B (총 전투력: {teamB.reduce((sum, p) => sum + p.mmr, 0)})
+            팀 낮은골짜기 (총 전투력💪: {teamB.reduce((sum, p) => sum + p.mmr, 0)})
           </h2>
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {teamB.map((player) => (
               <li key={player.id} className="py-2">
-                {player.name} (MMR: {player.mmr})
+                {player.name} (전투력💪: {player.mmr})
               </li>
             ))}
           </ul>
@@ -190,7 +190,7 @@ export default function MatchPage() {
                 onChange={() => setWinnerTeam("A")}
                 className="w-5 h-5"
               />
-              팀 A
+              팀 높은봉우리
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -201,7 +201,7 @@ export default function MatchPage() {
                 onChange={() => setWinnerTeam("B")}
                 className="w-5 h-5"
               />
-              팀 B
+              팀 낮은골짜기
             </label>
           </div>
         </div>

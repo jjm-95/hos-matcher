@@ -131,7 +131,7 @@ export default function HomePage() {
                     className="flex justify-between items-center py-2"
                   >
                     <span>
-                      🏅 {rank}위 - {player.name} (전투력: {player.mmr})
+                      🏅 {rank}위 - {player.name} (전투력💪: {player.mmr})
                     </span>
                     <button
                       onClick={() => handleDeletePlayer(player.id)}
