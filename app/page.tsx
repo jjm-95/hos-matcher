@@ -73,7 +73,7 @@ export default function HomePage() {
   return (
     <div className="p-6 bg-gray-100 dark:bg-gray-900 dark:text-gray-100 min-h-screen">
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-        <h1 className="text-3xl font-bold text-center mb-6">선수 관리 시스템</h1>
+        <h1 className="text-3xl font-bold text-center mb-6">🔥🔥히오스 내전🔥🔥</h1>
 
         {/* 선수 추가 폼 */}
         <div className="mb-6">
@@ -104,24 +104,44 @@ export default function HomePage() {
 
         {/* 등록된 선수 목록 */}
         <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-4">등록된 선수</h2>
+          <h2 className="text-xl font-semibold mb-4">불명예의 전당</h2>
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-            {players.map((player) => (
-              <li
-                key={player.id}
-                className="flex justify-between items-center py-2"
-              >
-                <span>
-                  {player.name} (전투력: {player.mmr})
-                </span>
-                <button
-                  onClick={() => handleDeletePlayer(player.id)}
-                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                >
-                  삭제
-                </button>
-              </li>
-            ))}
+            {players
+              .sort((a, b) => b.mmr - a.mmr) // 전투력 기준 내림차순 정렬
+              .map((player, index, sortedPlayers) => {
+                // 순위 계산
+                let rank;
+                if (index === 0) {
+                  // 첫 번째 선수는 항상 1위
+                  rank = 1;
+                } else if (sortedPlayers[index - 1].mmr === player.mmr) {
+                  // 동률인 경우 이전 선수와 동일한 순위
+                  rank = sortedPlayers[index - 1].rank;
+                } else {
+                  // 그렇지 않으면 현재 순위
+                  rank = index + 1;
+                }
+
+                // 현재 선수에 rank 속성 추가
+                player.rank = rank;
+
+                return (
+                  <li
+                    key={player.id}
+                    className="flex justify-between items-center py-2"
+                  >
+                    <span>
+                      🏅 {rank}위 - {player.name} (전투력: {player.mmr})
+                    </span>
+                    <button
+                      onClick={() => handleDeletePlayer(player.id)}
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    >
+                      삭제
+                    </button>
+                  </li>
+                );
+              })}
           </ul>
         </div>
 
