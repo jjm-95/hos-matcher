@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function HomePage() {
+  
   const [players, setPlayers] = useState<any[]>([]); // 선수 목록
   const [newPlayerName, setNewPlayerName] = useState(""); // 새 선수 이름
   const [newPlayerMMR, setNewPlayerMMR] = useState(""); // 새 선수 전투력
@@ -106,43 +107,43 @@ export default function HomePage() {
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4">불명예의 전당</h2>
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-            {players
-              .sort((a, b) => b.mmr - a.mmr) // 전투력 기준 내림차순 정렬
-              .map((player, index, sortedPlayers) => {
-                // 순위 계산
-                let rank;
-                if (index === 0) {
-                  // 첫 번째 선수는 항상 1위
-                  rank = 1;
-                } else if (sortedPlayers[index - 1].mmr === player.mmr) {
-                  // 동률인 경우 이전 선수와 동일한 순위
-                  rank = sortedPlayers[index - 1].rank;
-                } else {
-                  // 그렇지 않으면 현재 순위
-                  rank = index + 1;
-                }
+          {players
+            .sort((a, b) => b.mmr - a.mmr) // 전투력 기준 내림차순 정렬
+            .map((player, index, sortedPlayers) => {
+              // 순위 계산
+              let rank;
+              if (index === 0) {
+                // 첫 번째 선수는 항상 1위
+                rank = 1;
+              } else if (sortedPlayers[index - 1].mmr === player.mmr) {
+                // 동률인 경우 이전 선수와 동일한 순위
+                rank = sortedPlayers[index - 1].rank;
+              } else {
+                // 그렇지 않으면 현재 순위
+                rank = index + 1;
+              }
 
-                // 현재 선수에 rank 속성 추가
-                player.rank = rank;
+              // 현재 선수에 rank 속성 추가
+              player.rank = rank;
 
-                return (
-                  <li
-                    key={player.id}
-                    className="flex justify-between items-center py-2"
+              return (
+                <li
+                  key={player.id}
+                  className="flex justify-between items-center py-2"
+                >
+                  <span>
+                    {rank === 1 && "🏅"} {rank}위 - {player.name} (전투력: {player.mmr})
+                  </span>
+                  <button
+                    onClick={() => handleDeletePlayer(player.id)}
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
                   >
-                    <span>
-                      🏅 {rank}위 - {player.name} (전투력💪: {player.mmr})
-                    </span>
-                    <button
-                      onClick={() => handleDeletePlayer(player.id)}
-                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                    >
-                      삭제
-                    </button>
-                  </li>
-                );
-              })}
-          </ul>
+                    삭제
+                  </button>
+                </li>
+              );
+            })}
+        </ul>
         </div>
 
         {/* 설명글 */}
