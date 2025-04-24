@@ -13,6 +13,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { motion, AnimatePresence } from "framer-motion";
 
 ChartJS.register(
   CategoryScale,
@@ -28,7 +29,7 @@ export default function HomePage() {
   const [players, setPlayers] = useState<any[]>([]);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerMMR, setNewPlayerMMR] = useState("");
-  const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [playerHistory, setPlayerHistory] = useState<number[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [playerToDelete, setPlayerToDelete] = useState<any | null>(null);
@@ -57,8 +58,8 @@ export default function HomePage() {
       setPlayers((prevPlayers) =>
         prevPlayers.filter((player) => player.id !== playerToDelete.id)
       );
-      if (selectedPlayer?.id === playerToDelete.id) {
-        setSelectedPlayer(null);
+      if (selectedPlayerId === playerToDelete.id) {
+        setSelectedPlayerId(null);
         setPlayerHistory([]);
       }
       setShowDeleteModal(false);
@@ -68,13 +69,13 @@ export default function HomePage() {
     }
   };
 
-  const handlePlayerClick = (player: any) => {
-    if (selectedPlayer?.id === player.id) {
-      setSelectedPlayer(null);
+  const handlePlayerClick = async (player: any) => {
+    if (selectedPlayerId === player.id) {
+      setSelectedPlayerId(null);
       setPlayerHistory([]);
     } else {
-      setSelectedPlayer(player);
-      fetchPlayerHistory(player.id);
+      setSelectedPlayerId(player.id);
+      await fetchPlayerHistory(player.id);
     }
   };
 
@@ -93,11 +94,22 @@ export default function HomePage() {
   }, []);
 
   return (
+    
     <div className="p-6 bg-gray-100 dark:bg-gray-900 dark:text-gray-100 min-h-screen">
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
         <h1 className="text-3xl font-bold text-center mb-6">🔥🔥히오스 내전🔥🔥</h1>
 
-        {/* 선수 추가 폼 */}
+        {/* 설명서 */}
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900 text-sm rounded">
+          <p className="font-semibold mb-2">📘 전투력 보정 규칙</p>
+          <ul className="list-disc ml-6 space-y-1">
+            <li>2연승 / 2연패 시: 전투력 ±0.5 보정 적용</li>
+            <li>전투력이 0 이하일 경우 패배 시: 무조건 0.5만큼 감소</li>
+            <li>팀 간 전투력 3 이상 차이 시: 전투력이 낮은 팀은 승리 시 +1 보너스</li>
+          </ul>
+        </div>
+
+        {/* 선수 추가 */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4">선수 추가</h2>
           <div className="flex gap-4">
@@ -129,7 +141,7 @@ export default function HomePage() {
                   },
                   body: JSON.stringify({
                     name: newPlayerName,
-                    mmr: newPlayerMMR ? parseInt(newPlayerMMR) : undefined,
+                    mmr: newPlayerMMR ? parseFloat(newPlayerMMR) : undefined,
                   }),
                 });
 
@@ -154,20 +166,66 @@ export default function HomePage() {
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {players.map((player, index) => {
               const rank = index + 1;
+              const isSelected = selectedPlayerId === player.id;
               return (
-                <li
-                  key={player.id}
-                  className="flex justify-between items-center py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <span onClick={() => handlePlayerClick(player)}>
-                    {rank === 1 && "🏅"} {rank}위 - {player.name} (전투력💪: {player.mmr})
-                  </span>
-                  <button
-                    onClick={() => openDeleteModal(player)}
-                    className="bg-red-500 dark:bg-red-600 text-white px-4 py-2 rounded hover:bg-red-600 dark:hover:bg-red-700"
+                <li key={player.id} className="py-2">
+                  <div
+                    className="flex justify-between items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded"
+                    onClick={() => handlePlayerClick(player)}
                   >
-                    삭제
-                  </button>
+                    <span>
+                      {rank === 1 && "🏅"} {rank}위 - {player.name} (전투력💪: {player.mmr})
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteModal(player);
+                      }}
+                      className="bg-red-500 dark:bg-red-600 text-white px-4 py-2 rounded hover:bg-red-600 dark:hover:bg-red-700"
+                    >
+                      삭제
+                    </button>
+                  </div>
+
+                  {/* 그래프 */}
+                  <AnimatePresence>
+                    {isSelected && playerHistory.length > 0 && (
+                      <motion.div
+                        key="chart"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden mt-4 p-2 bg-gray-50 dark:bg-gray-700 rounded"
+                      >
+                        <Line
+                          data={{
+                            labels: playerHistory.map((_, i) => `Match ${i + 1}`),
+                            datasets: [
+                              {
+                                label: `${player.name}의 전투력`,
+                                data: playerHistory,
+                                borderColor: "rgb(75, 192, 192)",
+                                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                              },
+                            ],
+                          }}
+                          options={{
+                            responsive: true,
+                            animation: false,
+                            plugins: {
+                              legend: { position: "top" },
+                              title: { display: true, text: `${player.name}의 전투력 변동` },
+                            },
+                            scales: {
+                              y: { title: { display: true, text: "전투력" } },
+                              x: { title: { display: true, text: "매칭 횟수" } },
+                            },
+                          }}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </li>
               );
             })}
@@ -200,41 +258,8 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* 전투력 그래프 */}
-        {selectedPlayer && (
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {selectedPlayer.name}의 전투력 변동
-            </h2>
-            <Line
-              data={{
-                labels: playerHistory.map((_, index) => `Match ${index + 1}`),
-                datasets: [
-                  {
-                    label: `${selectedPlayer.name}의 전투력`,
-                    data: playerHistory,
-                    borderColor: "rgb(75, 192, 192)",
-                    backgroundColor: "rgba(75, 192, 192, 0.2)",
-                  },
-                ],
-              }}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: { position: "top" },
-                  title: { display: true, text: `${selectedPlayer.name}의 전투력 변동` },
-                },
-                scales: {
-                  y: { title: { display: true, text: "전투력" } },
-                  x: { title: { display: true, text: "매칭 횟수" } },
-                },
-              }}
-            />
-          </div>
-        )}
-
         {/* 페이지 이동 버튼 */}
-        <div className="text-center flex justify-center gap-4">
+        <div className="text-center flex justify-center gap-4 mt-6">
           <button
             onClick={() => router.push("/match")}
             className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-600 dark:hover:bg-blue-700"

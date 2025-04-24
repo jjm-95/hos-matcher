@@ -36,28 +36,52 @@ export default function MatchPage() {
       alert("참여 인원은 짝수여야 합니다!");
       return;
     }
-
-    // 자동 매칭 로직
-    const sortedPlayers = [...selectedPlayers].sort((a, b) => b.mmr - a.mmr);
-    const teamA: any[] = [];
-    const teamB: any[] = [];
-    let teamASum = 0;
-    let teamBSum = 0;
-
-    for (const player of sortedPlayers) {
-      if (teamASum <= teamBSum) {
-        teamA.push(player);
-        teamASum += player.mmr;
-      } else {
-        teamB.push(player);
-        teamBSum += player.mmr;
+    const totalPlayers = selectedPlayers.length;
+    const half = totalPlayers / 2;
+    let minDiff = Infinity;
+    let bestTeamA: any[] = [];
+    let bestTeamB: any[] = [];
+  
+    // 가능한 모든 조합을 생성하여 팀 구성
+    const getCombinations = (players: any[], teamSize: number): any[][] => {
+      const results: any[][] = [];
+      const combination: any[] = [];
+  
+      const backtrack = (start: number) => {
+        if (combination.length === teamSize) {
+          results.push([...combination]);
+          return;
+        }
+  
+        for (let i = start; i < players.length; i++) {
+          combination.push(players[i]);
+          backtrack(i + 1);
+          combination.pop();
+        }
+      };
+  
+      backtrack(0);
+      return results;
+    };
+  
+    const combinations = getCombinations(selectedPlayers, half);
+    for (const teamA of combinations) {
+      const teamB = selectedPlayers.filter((player) => !teamA.includes(player));
+  
+      const teamAPower = teamA.reduce((sum, player) => sum + player.mmr, 0);
+      const teamBPower = teamB.reduce((sum, player) => sum + player.mmr, 0);
+      const powerDifference = Math.abs(teamAPower - teamBPower);
+  
+      if (powerDifference < minDiff) {
+        minDiff = powerDifference;
+        bestTeamA = teamA;
+        bestTeamB = teamB;
       }
     }
-
-    setTeamA(teamA);
-    setTeamB(teamB);
+  
+    setTeamA(bestTeamA);
+    setTeamB(bestTeamB);
   };
-
   // 경기 결과 제출
   const handleSubmitMatch = async () => {
     if (!winnerTeam) {

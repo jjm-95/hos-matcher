@@ -20,8 +20,9 @@ type MatchRequest = {
 const autoMatchTeams = (
   players: PlayerInput[]
 ): { teamA: PlayerInput[]; teamB: PlayerInput[] } => {
+  // 플레이어 수가 짝수가 아닐 경우 에러를 throw
   if (players.length % 2 !== 0) {
-    throw new Error('선수 수는 짝수여야 합니다.');
+    throw new Error('플레이어 수는 짝수여야 합니다. 현재 플레이어 수: ' + players.length);
   }
 
   const n = players.length;
@@ -124,87 +125,105 @@ const updateMMR = async (players: PlayerInput[], isWinner: boolean) => {
 
   return updatedPlayers;
 };
+// 팀 전투력 계산 함수
+const calculateTeamPower = (team: PlayerInput[]) => {
+  return team.reduce((total, player) => total + player.mmr, 0);
+};
 
 // POST 요청 처리
 export async function POST(req: Request) {
   try {
-  const { players, winnerTeam }: MatchRequest = await req.json();
+    const { players, winnerTeam }: MatchRequest = await req.json();
 
-  if (winnerTeam !== 'A' && winnerTeam !== 'B') {
-    return NextResponse.json({ error: '승리팀이 올바르지 않습니다.' }, { status: 400 });
-  }
-
-  const { teamA, teamB } = autoMatchTeams(players);
-
-  // 공통 matchId 생성
-  const matchId = crypto.randomUUID();
-
-  // MMR 업데이트 로직은 기존과 동일하되, MMR 변경값 저장 필요
-  const updateAndGetNewMMR = async (player: PlayerInput, isWinner: boolean) => {
-    const mmrChange = isWinner ? 1 : -1;
-    const winStreak = await checkStreak(player.id, 'win');
-    const lossStreak = await checkStreak(player.id, 'loss');
-
-    let adjustedMMRChange = mmrChange;
-
-    if (player.mmr <= 0) {
-      adjustedMMRChange = isWinner ? 1 : -0.5;
-    } else {
-      if (isWinner) {
-        adjustedMMRChange = winStreak >= 2 ? mmrChange - 0.5 : mmrChange;
-      } else {
-        adjustedMMRChange = lossStreak >= 2 ? mmrChange + 0.5 : mmrChange;
-      }
+    if (winnerTeam !== 'A' && winnerTeam !== 'B') {
+      return NextResponse.json({ error: '승리팀이 올바르지 않습니다.' }, { status: 400 });
     }
 
-    const updatedPlayer = await prisma.player.update({
-      where: { id: player.id },
-      data: { mmr: player.mmr + adjustedMMRChange },
-    });
+    const { teamA, teamB } = autoMatchTeams(players);
 
-    return {
-      mmrChange: adjustedMMRChange,
-      newMMR: updatedPlayer.mmr,
+    // 팀 전투력 계산
+    const teamAPower = calculateTeamPower(teamA);
+    const teamBPower = calculateTeamPower(teamB);
+
+    // 전투력 차이 계산
+    const powerDifference = Math.abs(teamAPower - teamBPower);
+
+    // 공통 matchId 생성
+    const matchId = crypto.randomUUID();
+
+    // MMR 업데이트 로직
+    const updateAndGetNewMMR = async (player: PlayerInput, isWinner: boolean, isUnderdogWin: boolean) => {
+      const mmrChange = isWinner ? 1 : -1;
+      const winStreak = await checkStreak(player.id, 'win');
+      const lossStreak = await checkStreak(player.id, 'loss');
+
+      let adjustedMMRChange = mmrChange;
+
+      if (player.mmr <= 0) {
+        adjustedMMRChange = isWinner ? 1 : -0.5;
+      } else {
+        if (isWinner) {
+          adjustedMMRChange = winStreak >= 2 ? mmrChange - 0.5 : mmrChange;
+        } else {
+          adjustedMMRChange = lossStreak >= 2 ? mmrChange + 0.5 : mmrChange;
+        }
+      }
+
+      // 전투력 보정 적용
+      if (isUnderdogWin && isWinner) {
+        adjustedMMRChange += 1; // 추가 1점 보정 (총 2점)
+      }
+
+      const updatedPlayer = await prisma.player.update({
+        where: { id: player.id },
+        data: { mmr: player.mmr + adjustedMMRChange },
+      });
+
+      return {
+        mmrChange: adjustedMMRChange,
+        newMMR: updatedPlayer.mmr,
+      };
     };
-  };
 
-  // 팀 A 기록 저장
-  for (const player of teamA) {
-    const { mmrChange, newMMR } = await updateAndGetNewMMR(player, winnerTeam === 'A');
-    await prisma.gameMatch.create({
-      data: {
-        matchId: matchId,
-        playerId: player.id,
-        result: winnerTeam === 'A' ? 'win' : 'loss',
-        team: 'A',
-        isWinner: winnerTeam === 'A',
-        mmrChange: mmrChange,
-        newMMR: newMMR,
-        date: new Date(),
-      },
-    });
-  }
+    // 팀 A 기록 저장
+    for (const player of teamA) {
+      const isUnderdogWin = powerDifference >= 3 && winnerTeam === 'A' && teamAPower < teamBPower;
+      const { mmrChange, newMMR } = await updateAndGetNewMMR(player, winnerTeam === 'A', isUnderdogWin);
+      await prisma.gameMatch.create({
+        data: {
+          matchId: matchId,
+          playerId: player.id,
+          result: winnerTeam === 'A' ? 'win' : 'loss',
+          team: 'A',
+          isWinner: winnerTeam === 'A',
+          mmrChange: mmrChange,
+          newMMR: newMMR,
+          date: new Date(),
+        },
+      });
+    }
 
-  // 팀 B 기록 저장
-  for (const player of teamB) {
-    const { mmrChange, newMMR } = await updateAndGetNewMMR(player, winnerTeam === 'B');
-    await prisma.gameMatch.create({
-      data: {
-        matchId: matchId,
-        playerId: player.id,
-        result: winnerTeam === 'B' ? 'win' : 'loss',
-        team: 'B',
-        isWinner: winnerTeam === 'B',
-        mmrChange: mmrChange,
-        newMMR: newMMR,
-        date: new Date(),
-      },
-    });
-  }
+    // 팀 B 기록 저장
+    for (const player of teamB) {
+      const isUnderdogWin = powerDifference >= 3 && winnerTeam === 'B' && teamBPower < teamAPower;
+      const { mmrChange, newMMR } = await updateAndGetNewMMR(player, winnerTeam === 'B', isUnderdogWin);
+      await prisma.gameMatch.create({
+        data: {
+          matchId: matchId,
+          playerId: player.id,
+          result: winnerTeam === 'B' ? 'win' : 'loss',
+          team: 'B',
+          isWinner: winnerTeam === 'B',
+          mmrChange: mmrChange,
+          newMMR: newMMR,
+          date: new Date(),
+        },
+      });
+    }
 
-  return NextResponse.json({ message: '경기 결과 처리 완료!', matchId });
-  } catch (err: any) {
-    console.error("경기 저장 중 오류:", err);
-    return NextResponse.json({ error: "서버 오류 발생", detail: err.message }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
   }
 }
