@@ -166,7 +166,7 @@ export default function HomePage() {
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {(() => {
               let lastMMR: number | null = null;
-              let rank = 0;
+              let rank = 0;   
 
               return players.map((player, index) => {
                 const isSelected = selectedPlayerId === player.id;
