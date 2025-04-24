@@ -62,6 +62,8 @@ export async function GET() {
       teamB,
     };
   });
+  
+  console.log('GameMatch Data:', matches); // 데이터 확인
 
   return NextResponse.json(groupedArray);
 }

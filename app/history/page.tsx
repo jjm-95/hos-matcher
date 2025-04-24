@@ -30,6 +30,7 @@ export default function HistoryPage() {
     const fetchMatches = async () => {
       const res = await fetch('/api/history')
       const matches: GroupedMatch[] = await res.json()
+      console.log('Fetched Matches:', matches); // 데이터 확인
       setGroupedMatches(matches)
     }
 
@@ -61,16 +62,17 @@ export default function HistoryPage() {
           className="border border-gray-300 dark:border-gray-700 rounded-lg p-6 mb-6 shadow-md bg-white dark:bg-gray-800 transition-colors"
         >
           <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">
-            🏆 {match.winnerTeam}팀 승리
+            🏆 {match.winnerTeam === 'A' ? '높은봉우리' : '낮은골짜기'}팀 승리
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {['A', 'B'].map((teamKey) => {
-              const team = teamKey === 'A' ? match.teamA : match.teamB
+              const team = teamKey === 'A' ? match.teamA : match.teamB;
+              const teamName = teamKey === 'A' ? '높은봉우리' : '낮은골짜기'; // 팀 이름 치환
               return (
                 <div key={teamKey}>
                   <h3 className="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-200">
-                    {teamKey}팀
+                    {teamName}팀
                   </h3>
                   <ul className="space-y-2 text-sm">
                     {team.map((player, index) => (
@@ -87,7 +89,7 @@ export default function HistoryPage() {
                           }`}
                         >
                           ({player.mmrChange > 0 ? '+' : ''}
-                          {player.mmrChange}) → {player.newMMR}
+                          {player.mmrChange.toFixed(1)}) → {player.newMMR.toFixed(1)}
                         </span>
                       </li>
                     ))}

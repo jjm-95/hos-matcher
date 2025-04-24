@@ -41,6 +41,6 @@ model GameMatch {
   team       String
   isWinner   Boolean
   date       DateTime @default(now())
-  mmrChange  Int      @default(0)
-  newMMR     Int      @default(0)
+  mmrChange  Float      @default(0)
+  newMMR     Float      @default(0)
 }

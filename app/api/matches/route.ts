@@ -87,43 +87,43 @@ const checkStreak = async (playerId: string, type: 'win' | 'loss') => {
 
 // MMR 업데이트 함수
 const updateMMR = async (players: PlayerInput[], isWinner: boolean) => {
-  const mmrChange = isWinner ? 1 : -1
-  const updatedPlayers: (PlayerInput & { mmrChange: number; newMMR: number })[] = []
+  const mmrChange = isWinner ? 1 : -1;
+  const updatedPlayers: (PlayerInput & { mmrChange: number; newMMR: number })[] = [];
 
   for (const player of players) {
-    const winStreak = await checkStreak(player.id, 'win')
-    const lossStreak = await checkStreak(player.id, 'loss')
+    const winStreak = await checkStreak(player.id, 'win');
+    const lossStreak = await checkStreak(player.id, 'loss');
 
-    let adjustedMMRChange = mmrChange
+    let adjustedMMRChange = mmrChange;
 
     if (player.mmr <= 0) {
-      adjustedMMRChange = isWinner ? 1 : -0.5
+      adjustedMMRChange = isWinner ? 1 : -0.5;
     } else {
       if (isWinner) {
-        adjustedMMRChange = winStreak >= 2 ? mmrChange - 0.5 : mmrChange
+        adjustedMMRChange = winStreak >= 2 ? mmrChange - 0.5 : mmrChange;
       } else {
-        adjustedMMRChange = lossStreak >= 2 ? mmrChange + 0.5 : mmrChange
+        adjustedMMRChange = lossStreak >= 2 ? mmrChange + 0.5 : mmrChange;
       }
     }
 
-    const newMMR = player.mmr + adjustedMMRChange
+    const newMMR = parseFloat((player.mmr + adjustedMMRChange).toFixed(2));
+
+    console.log(`Player: ${player.name}, Old MMR: ${player.mmr}, Change: ${adjustedMMRChange}, New MMR: ${newMMR}`);
 
     await prisma.player.update({
       where: { id: player.id },
-      data: {
-        mmr: newMMR,
-      },
-    })
+      data: { mmr: newMMR },
+    });
 
     updatedPlayers.push({
       ...player,
       mmrChange: adjustedMMRChange,
       newMMR,
-    })
+    });
   }
 
-  return updatedPlayers
-}
+  return updatedPlayers;
+};
 
 // POST 요청 처리
 export async function POST(req: Request) {
