@@ -9,6 +9,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "./node_modules/@prisma/client"
 }
 
 datasource db {
@@ -33,11 +34,14 @@ model GameResult {
 }
 
 model GameMatch {
-  id        Int      @id @default(autoincrement())
-  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  playerId  String
-  result    String
-  team      String
-  isWinner  Boolean   // ✅ 새 필드
-  date      DateTime  @default(now())
+  id         String   @id @default(uuid())
+  matchId    String   @default(uuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  result     String
+  team       String
+  isWinner   Boolean
+  date       DateTime @default(now())
+  mmrChange  Int      @default(0)
+  newMMR     Int      @default(0)
 }
