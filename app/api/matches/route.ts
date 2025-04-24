@@ -21,28 +21,49 @@ const autoMatchTeams = (
   players: PlayerInput[]
 ): { teamA: PlayerInput[]; teamB: PlayerInput[] } => {
   if (players.length % 2 !== 0) {
-    throw new Error('선수 수는 짝수여야 합니다.')
+    throw new Error('선수 수는 짝수여야 합니다.');
   }
 
-  players.sort((a, b) => b.mmr - a.mmr)
+  const n = players.length;
+  const half = n / 2;
+  let minDiff = Infinity;
+  let bestTeamA: PlayerInput[] = [];
+  let bestTeamB: PlayerInput[] = [];
 
-  const teamA: PlayerInput[] = []
-  const teamB: PlayerInput[] = []
-  let teamASum = 0
-  let teamBSum = 0
+  const backtrack = (
+    idx: number,
+    teamA: PlayerInput[],
+    used: boolean[]
+  ) => {
+    if (teamA.length === half) {
+      const teamB = players.filter((_, i) => !used[i]);
+      const sumA = teamA.reduce((sum, p) => sum + p.mmr, 0);
+      const sumB = teamB.reduce((sum, p) => sum + p.mmr, 0);
+      const diff = Math.abs(sumA - sumB);
 
-  for (const player of players) {
-    if (teamASum <= teamBSum) {
-      teamA.push(player)
-      teamASum += player.mmr
-    } else {
-      teamB.push(player)
-      teamBSum += player.mmr
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestTeamA = [...teamA];
+        bestTeamB = [...teamB];
+      }
+      return;
     }
-  }
 
-  return { teamA, teamB }
-}
+    for (let i = idx; i < n; i++) {
+      if (!used[i]) {
+        used[i] = true;
+        teamA.push(players[i]);
+        backtrack(i + 1, teamA, used);
+        teamA.pop();
+        used[i] = false;
+      }
+    }
+  };
+
+  backtrack(0, [], Array(n).fill(false));
+
+  return { teamA: bestTeamA, teamB: bestTeamB };
+};
 
 // 연승/연패 계산 함수
 const checkStreak = async (playerId: string, type: 'win' | 'loss') => {
