@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
-import { GameMatch } from "@prisma/client";
+import type { GameMatch } from "@prisma/client";
 
 // player를 포함한 타입 선언
 type GameMatchWithPlayer = GameMatch & {
