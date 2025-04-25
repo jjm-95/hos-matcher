@@ -25,6 +25,16 @@ ChartJS.register(
   Legend
 );
 
+type Settings = {
+  id?: number; // 선택적 필드
+  MMR_WIN_CHANGE: number;
+  MMR_LOSS_CHANGE: number;
+  STREAK_BONUS: number;
+  UNDERDOG_BONUS: number;
+  POWER_DIFFERENCE_THRESHOLD: number;
+};
+
+
 export default function HomePage() {
   const [players, setPlayers] = useState<any[]>([]);
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -88,9 +98,22 @@ export default function HomePage() {
     setShowDeleteModal(false);
     setPlayerToDelete(null);
   };
+  const [settings, setSettings] = useState<Settings>({
+    id: undefined,
+    MMR_WIN_CHANGE: 1,
+    MMR_LOSS_CHANGE: -1,
+    STREAK_BONUS: 0.5,
+    UNDERDOG_BONUS: 1,
+    POWER_DIFFERENCE_THRESHOLD: 3,
+  });
 
   useEffect(() => {
-    fetchPlayers();
+    const fetchSettings = async () => {
+      const res = await fetch("/api/settings");
+      const data = await res.json();
+      setSettings(data);
+    };
+    fetchSettings();
   }, []);
 
   return (
@@ -103,10 +126,31 @@ export default function HomePage() {
         <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900 text-sm rounded">
           <p className="font-semibold mb-2">📘 전투력 보정 규칙</p>
           <ul className="list-disc ml-6 space-y-1">
-            <li>2연승 / 2연패 시: 전투력 ±0.5 보정 적용</li>
-            <li>전투력이 0 이하일 경우 패배 시: 무조건 0.5만큼 감소</li>
-            <li>팀 간 전투력 3 이상 차이 시: 전투력이 낮은 팀은 승리 시 +1 보너스</li>
+            <li>
+              승리/패배 시: 전투력 
+              <span className="font-bold">+{settings.MMR_WIN_CHANGE}, {settings.MMR_LOSS_CHANGE}</span> 보정 적용
+            </li>
+            <li>
+              2연승 / 2연패 시: 전투력 ±
+              <span className="font-bold">{settings.STREAK_BONUS}</span> 보정 적용
+            </li>
+            <li>
+              전투력이 0 이하일 경우 패배 시: 무조건 
+              <span className="font-bold">{Math.abs(settings.MMR_LOSS_CHANGE / 2)}</span>
+              만큼 감소
+            </li>
+            <li>
+              팀 간 전투력 
+              <span className="font-bold">{settings.POWER_DIFFERENCE_THRESHOLD}</span> 이상 차이 시: 전투력이 낮은 팀은 승리 시 
+              <span className="font-bold">+{settings.UNDERDOG_BONUS}</span> 보너스
+            </li>
           </ul>
+          <button
+            onClick={() => window.location.href = "/settings"}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            설정
+          </button>
         </div>
 
         {/* 선수 추가 */}

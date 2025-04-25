@@ -44,3 +44,12 @@ model GameMatch {
   mmrChange  Float      @default(0)
   newMMR     Float      @default(0)
 }
+
+model MMRSettings {
+  id                        Int     @id @default(autoincrement())
+  MMR_WIN_CHANGE            Float   @default(1)
+  MMR_LOSS_CHANGE           Float   @default(-1)
+  STREAK_BONUS              Float   @default(0.5)
+  UNDERDOG_BONUS            Float   @default(1)
+  POWER_DIFFERENCE_THRESHOLD Float   @default(3)
+}

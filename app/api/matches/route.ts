@@ -4,6 +4,21 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Player } from '@prisma/client'
 
+// 설정값 로드
+const loadSettings = async () => {
+  const settings = await prisma.mMRSettings.findFirst();
+  if (!settings) {
+    throw new Error("MMR 설정값이 존재하지 않습니다.");
+  }
+  return settings;
+};
+  const settings = await loadSettings();
+  const MMR_WIN_CHANGE = settings.MMR_WIN_CHANGE;
+  const STREAK_BONUS = settings.STREAK_BONUS;
+  const MMR_LOSS_CHANGE = settings.MMR_LOSS_CHANGE;
+  const UNDERDOG_BONUS = settings.UNDERDOG_BONUS;
+  const POWER_DIFFERENCE_THRESHOLD = settings.POWER_DIFFERENCE_THRESHOLD;
+
 // 사용자 정의 타입 (입력으로 받는 Player)
 type PlayerInput = {
   id: string
@@ -88,7 +103,8 @@ const checkStreak = async (playerId: string, type: 'win' | 'loss') => {
 
 // MMR 업데이트 함수
 const updateMMR = async (players: PlayerInput[], isWinner: boolean) => {
-  const mmrChange = isWinner ? 1 : -1;
+
+  const mmrChange = isWinner ? MMR_WIN_CHANGE : MMR_LOSS_CHANGE;
   const updatedPlayers: (PlayerInput & { mmrChange: number; newMMR: number })[] = [];
 
   for (const player of players) {
@@ -98,12 +114,12 @@ const updateMMR = async (players: PlayerInput[], isWinner: boolean) => {
     let adjustedMMRChange = mmrChange;
 
     if (player.mmr <= 0) {
-      adjustedMMRChange = isWinner ? 1 : -0.5;
+      adjustedMMRChange = isWinner ? MMR_WIN_CHANGE : MMR_LOSS_CHANGE / 2;
     } else {
       if (isWinner) {
-        adjustedMMRChange = winStreak >= 2 ? mmrChange - 0.5 : mmrChange;
+        adjustedMMRChange = winStreak >= 2 ? mmrChange - STREAK_BONUS : mmrChange;
       } else {
-        adjustedMMRChange = lossStreak >= 2 ? mmrChange + 0.5 : mmrChange;
+        adjustedMMRChange = lossStreak >= 2 ? mmrChange + STREAK_BONUS : mmrChange;
       }
     }
 
@@ -153,25 +169,25 @@ export async function POST(req: Request) {
 
     // MMR 업데이트 로직
     const updateAndGetNewMMR = async (player: PlayerInput, isWinner: boolean, isUnderdogWin: boolean) => {
-      const mmrChange = isWinner ? 1 : -1;
+      const mmrChange = isWinner ? MMR_WIN_CHANGE : MMR_LOSS_CHANGE;
       const winStreak = await checkStreak(player.id, 'win');
       const lossStreak = await checkStreak(player.id, 'loss');
 
       let adjustedMMRChange = mmrChange;
 
       if (player.mmr <= 0) {
-        adjustedMMRChange = isWinner ? 1 : -0.5;
+        adjustedMMRChange = isWinner ? MMR_WIN_CHANGE : MMR_LOSS_CHANGE / 2;
       } else {
         if (isWinner) {
-          adjustedMMRChange = winStreak >= 2 ? mmrChange - 0.5 : mmrChange;
+          adjustedMMRChange = winStreak >= 2 ? mmrChange - STREAK_BONUS : mmrChange;
         } else {
-          adjustedMMRChange = lossStreak >= 2 ? mmrChange + 0.5 : mmrChange;
+          adjustedMMRChange = lossStreak >= 2 ? mmrChange + STREAK_BONUS : mmrChange;
         }
       }
 
       // 전투력 보정 적용
       if (isUnderdogWin && isWinner) {
-        adjustedMMRChange += 1; // 추가 1점 보정 (총 2점)
+        adjustedMMRChange += UNDERDOG_BONUS; // 추가 1점 보정 (총 2점)
       }
 
       const updatedPlayer = await prisma.player.update({
@@ -187,7 +203,7 @@ export async function POST(req: Request) {
 
     // 팀 A 기록 저장
     for (const player of teamA) {
-      const isUnderdogWin = powerDifference >= 3 && winnerTeam === 'A' && teamAPower < teamBPower;
+      const isUnderdogWin = powerDifference >= POWER_DIFFERENCE_THRESHOLD && winnerTeam === 'A' && teamAPower < teamBPower;
       const { mmrChange, newMMR } = await updateAndGetNewMMR(player, winnerTeam === 'A', isUnderdogWin);
       await prisma.gameMatch.create({
         data: {
@@ -205,7 +221,7 @@ export async function POST(req: Request) {
 
     // 팀 B 기록 저장
     for (const player of teamB) {
-      const isUnderdogWin = powerDifference >= 3 && winnerTeam === 'B' && teamBPower < teamAPower;
+      const isUnderdogWin = powerDifference >= POWER_DIFFERENCE_THRESHOLD && winnerTeam === 'B' && teamBPower < teamAPower;
       const { mmrChange, newMMR } = await updateAndGetNewMMR(player, winnerTeam === 'B', isUnderdogWin);
       await prisma.gameMatch.create({
         data: {
