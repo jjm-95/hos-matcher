@@ -22,8 +22,15 @@ const settingLabels: Record<keyof Settings, string> = {
 };
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings | null>(null); // 초기값을 null로 설정
-  const [loading, setLoading] = useState(true); // 로딩 상태 추가
+  const [settings, setSettings] = useState<Settings>({
+    id: 1, // 초기값 설정
+    MMR_WIN_CHANGE: 1,
+    MMR_LOSS_CHANGE: -1,
+    STREAK_BONUS: 0.5,
+    UNDERDOG_BONUS: 1,
+    POWER_DIFFERENCE_THRESHOLD: 3,
+  });
+  const [loading, setLoading] = useState(true);
 
   // 설정값 가져오기
   const fetchSettings = async () => {
@@ -75,7 +82,7 @@ export default function SettingsPage() {
     };
     fetchSettings();
   }, []);
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -87,10 +94,6 @@ export default function SettingsPage() {
         />
       </div>
     );
-  }
-
-  if (!settings) {
-    return <div className="text-center mt-10">설정을 가져오는 데 실패했습니다.</div>; // 설정값이 없을 경우 처리
   }
 
   return (
