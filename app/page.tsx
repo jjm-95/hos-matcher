@@ -121,13 +121,22 @@ export default function HomePage() {
   }, []);
 
   if (loading) {
-    return <div className="text-center mt-10">로딩 중...</div>; // 로딩 화면 표시
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        로딩중...
+        <img
+          src="/loading.gif" // 로딩 GIF 경로
+          alt="Loading..."
+          className="w-16 h-16"
+        />
+      </div>
+    );
   }
 
   if (!settings) {
     return <div className="text-center mt-10">설정을 가져오는 데 실패했습니다.</div>; // 설정값이 없을 경우 처리
   }
-  
+
   return (
     
     <div className="p-6 bg-gray-100 dark:bg-gray-900 dark:text-gray-100 min-h-screen">
