@@ -75,7 +75,7 @@ export default function SettingsPage() {
     };
     fetchSettings();
   }, []);
-
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -87,6 +87,7 @@ export default function SettingsPage() {
         />
       </div>
     );
+  }
 
   if (!settings) {
     return <div className="text-center mt-10">설정을 가져오는 데 실패했습니다.</div>; // 설정값이 없을 경우 처리
