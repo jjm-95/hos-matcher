@@ -113,11 +113,30 @@ export default function HomePage() {
         setSettings(data);
       } catch (error) {
         console.error("Error fetching settings:", error);
-      } finally {
-        setLoading(false); // 로딩 상태 해제
       }
     };
-    fetchSettings();
+  
+    const fetchPlayers = async () => {
+      try {
+        const res = await fetch("/api/players");
+        if (!res.ok) {
+          throw new Error("Failed to fetch players");
+        }
+        const data = await res.json();
+        setPlayers(data);
+      } catch (error) {
+        console.error("Error fetching players:", error);
+      }
+    };
+  
+    const fetchData = async () => {
+      setLoading(true); // 로딩 상태 시작
+      await fetchSettings(); // 설정값 가져오기
+      await fetchPlayers(); // 선수 목록 가져오기
+      setLoading(false); // 로딩 상태 해제
+    };
+  
+    fetchData();
   }, []);
 
   if (loading) {
@@ -228,86 +247,90 @@ export default function HomePage() {
         {/* 선수 목록 */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4">불명예의 전당</h2>
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-            {(() => {
-              let lastMMR: number | null = null;
-              let rank = 0;   
+          {players.length === 0 ? (
+            <div className="text-center text-gray-500">선수 목록이 없습니다.</div>
+          ) : (
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              {(() => {
+                let lastMMR: number | null = null;
+                let rank = 0;
 
-              return players.map((player, index) => {
-                const isSelected = selectedPlayerId === player.id;
+                return players.map((player, index) => {
+                  const isSelected = selectedPlayerId === player.id;
 
-                if (player.mmr !== lastMMR) {
-                  rank = index + 1;
-                }
-                lastMMR = player.mmr;
+                  if (player.mmr !== lastMMR) {
+                    rank = index + 1;
+                  }
+                  lastMMR = player.mmr;
 
-                return (
-                  <li key={player.id} className="py-2">
-                    <div
-                      className="flex justify-between items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded"
-                      onClick={() => handlePlayerClick(player)}
-                    >
-                      <span>
-                        {rank === 1 && "🏅"} {rank}위 - {player.name} (전투력💪: {player.mmr})
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openDeleteModal(player);
-                        }}
-                        className="bg-red-500 dark:bg-red-600 text-white px-4 py-2 rounded hover:bg-red-600 dark:hover:bg-red-700"
+                  return (
+                    <li key={player.id} className="py-2">
+                      <div
+                        className="flex justify-between items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded"
+                        onClick={() => handlePlayerClick(player)}
                       >
-                        삭제
-                      </button>
-                    </div>
-
-                    {/* 그래프 */}
-                    <AnimatePresence>
-                      {isSelected && playerHistory.length > 0 && (
-                        <motion.div
-                          key="chart"
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden mt-4 p-2 bg-gray-50 dark:bg-gray-700 rounded"
+                        <span>
+                          {rank === 1 && "🏅"} {rank}위 - {player.name} (전투력💪: {player.mmr})
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDeleteModal(player);
+                          }}
+                          className="bg-red-500 dark:bg-red-600 text-white px-4 py-2 rounded hover:bg-red-600 dark:hover:bg-red-700"
                         >
-                          <Line
-                            data={{
-                              labels: playerHistory.map((_, i) => `Match ${i + 1}`),
-                              datasets: [
-                                {
-                                  label: `${player.name}의 전투력`,
-                                  data: playerHistory,
-                                  borderColor: "rgb(75, 192, 192)",
-                                  backgroundColor: "rgba(75, 192, 192, 0.2)",
+                          삭제
+                        </button>
+                      </div>
+
+                      {/* 그래프 */}
+                      <AnimatePresence>
+                        {isSelected && playerHistory.length > 0 && (
+                          <motion.div
+                            key="chart"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden mt-4 p-2 bg-gray-50 dark:bg-gray-700 rounded"
+                          >
+                            <Line
+                              data={{
+                                labels: playerHistory.map((_, i) => `Match ${i + 1}`),
+                                datasets: [
+                                  {
+                                    label: `${player.name}의 전투력`,
+                                    data: playerHistory,
+                                    borderColor: "rgb(75, 192, 192)",
+                                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                                  },
+                                ],
+                              }}
+                              options={{
+                                responsive: true,
+                                animation: false,
+                                plugins: {
+                                  legend: { position: "top" },
+                                  title: {
+                                    display: true,
+                                    text: `${player.name}의 전투력 변동`,
+                                  },
                                 },
-                              ],
-                            }}
-                            options={{
-                              responsive: true,
-                              animation: false,
-                              plugins: {
-                                legend: { position: "top" },
-                                title: {
-                                  display: true,
-                                  text: `${player.name}의 전투력 변동`,
+                                scales: {
+                                  y: { title: { display: true, text: "전투력" } },
+                                  x: { title: { display: true, text: "매칭 횟수" } },
                                 },
-                              },
-                              scales: {
-                                y: { title: { display: true, text: "전투력" } },
-                                x: { title: { display: true, text: "매칭 횟수" } },
-                              },
-                            }}
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </li>
-                );
-              });
-            })()}
-          </ul>
+                              }}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </li>
+                  );
+                });
+              })()}
+            </ul>
+          )}
         </div>
 
 
