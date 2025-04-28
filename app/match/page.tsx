@@ -9,7 +9,26 @@ export default function MatchPage() {
   const [teamA, setTeamA] = useState<any[]>([]); // 팀 A
   const [teamB, setTeamB] = useState<any[]>([]); // 팀 B
   const [winnerTeam, setWinnerTeam] = useState<"A" | "B" | null>(null); // 승리팀
+  const [powerDifferenceWarning, setPowerDifferenceWarning] = useState(false);
+  const [powerDifferenceThreshold, setPowerDifferenceThreshold] = useState<number>(3); // 기본값 3
   const router = useRouter();
+
+    // MMR 설정값 가져오기
+    const fetchMMRSettings = async () => {
+      try {
+        const res = await fetch("/api/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.POWER_DIFFERENCE_THRESHOLD) {
+            setPowerDifferenceThreshold(data.POWER_DIFFERENCE_THRESHOLD);
+          }
+        } else {
+          console.error("Failed to fetch settings");
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
 
   // 플레이어 목록 가져오기
   const fetchPlayers = async () => {
@@ -71,13 +90,23 @@ export default function MatchPage() {
       const teamAPower = teamA.reduce((sum, player) => sum + player.mmr, 0);
       const teamBPower = teamB.reduce((sum, player) => sum + player.mmr, 0);
       const powerDifference = Math.abs(teamAPower - teamBPower);
+
+
   
       if (powerDifference < minDiff) {
         minDiff = powerDifference;
         bestTeamA = teamA;
         bestTeamB = teamB;
       }
+
+      // 전투력 차이 경고
+      if (parseFloat(powerDifference.toFixed(2)) >= powerDifferenceThreshold) {
+        setPowerDifferenceWarning(true);
+      } else {
+        setPowerDifferenceWarning(false);
+      }
     }
+    
   
     setTeamA(bestTeamA);
     setTeamB(bestTeamB);
@@ -114,6 +143,7 @@ export default function MatchPage() {
 
   useEffect(() => {
     fetchPlayers();
+    fetchMMRSettings();
   }, []);
 
   return (
@@ -143,7 +173,6 @@ export default function MatchPage() {
             ))}
           </ul>
         </div>
-
         {/* 참여 인원 */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4">참여 인원</h2>
@@ -172,7 +201,15 @@ export default function MatchPage() {
             자동 매칭
           </button>
         </div>
-
+      {/* 경고 문구 */}
+      {powerDifferenceWarning && (
+        <div className="text-xl text-red-500 font-bold text-center">
+          <h2>🚨큰 전투력 매칭🚨</h2>
+          <div className="text-sm text-red-500 font-normal mt-1">
+            ({powerDifferenceThreshold} 이상의 전투력 차이)
+          </div> 
+        </div>
+      )}
         {/* 팀 A */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4">
